@@ -49,11 +49,23 @@ describe 'IntSeries' do
     series = IntSeries.new('ints', list_slice_size: 2)
     series << 1 << 2 << 3
     series[-1] = -1
+    series.to_a.should == %w(-1 1 2 3)
     series[-3] = -3
+    series.to_a.should == %w(-3 0 -1 1 2 3)
     series[-2] = -2
     series.length.should == 6
     series.from.should == -3
     series.to.should == 3
     series.to_a.should == %w(-3 -2 -1 1 2 3)
+  end
+
+  it 'lpush rpush' do
+    series = IntSeries.new('ints', list_slice_size: 5)
+    series.rpush 1, 2, 3, 4, 5, 6
+    series.from.should == 0
+    series.to.should == 6
+    series.lpush -5, -4, -3, -2, -1
+    series.from.should == -5
+    series.to_a.should == %w(-1 -2 -3 -4 -5 1 2 3 4 5 6)
   end
 end

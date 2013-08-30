@@ -2,6 +2,8 @@ require 'redis_stats/redis_series'
 
 # int series list
 # stored in many lists of max size list-max-ziplist-entries
+# any-range int indexes (e.g from -10 to 15)
+# auto-extends
 module RedisStats
   class IntSeries
     include RedisSeries
@@ -28,15 +30,15 @@ module RedisStats
       self.to   ||= idx
       to, from  = self.to, self.from
 
-      sliced_rpush *([0] * (idx - to)) if idx > to
-      sliced_lpush *([0] * (from - idx - 1)) if idx < from
+      rpush *([0] * (idx - to)) if idx > to
+      lpush *([0] * (from - idx - 1)) if idx < from
 
       if idx < from
-        sliced_lpush value
+        lpush value
       elsif idx >= to
-        sliced_rpush value
+        rpush value
       else
-        sliced_set idx, value
+        set_without_extend idx, value
       end
 
       value
@@ -86,9 +88,8 @@ module RedisStats
       end
     end
 
-    private
-
-    def sliced_rpush(*vals)
+    def rpush(*vals)
+      self.from = self.to = 0 unless self.from
       i = to = self.to
       while i <= to + vals.length
         slice, _ = key_pos(i)
@@ -101,12 +102,14 @@ module RedisStats
       self.to += vals.length
     end
 
-    def sliced_lpush(*vals)
-      i = from = self.from
-      while i > from - vals.length
-        slice, _ = key_pos(i - 1)
+    def lpush(*vals)
+      self.from = self.to = 0 unless self.from
+      from = self.from
+      i = from - 1
+      while i >= from - vals.length
+        slice, _ = key_pos(i)
         space    = slice_size - redis.llen(slice)
-        push = vals[vals.length - (i - from - 1 + space)..vals.length - (i - from - 1)] || []
+        push = vals[(from - i - 1)...(from - i - 1) + space] || []
         break if push.empty?
         redis.lpush slice, push
         i -= push.length
@@ -114,7 +117,9 @@ module RedisStats
       self.from -= vals.length
     end
 
-    def sliced_set(idx, val)
+    private
+
+    def set_without_extend(idx, val)
       slice, i = key_pos(idx)
       redis.lset slice, i, val
     end
