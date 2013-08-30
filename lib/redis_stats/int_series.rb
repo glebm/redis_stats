@@ -30,8 +30,8 @@ module RedisStats
       self.to   ||= idx
       to, from  = self.to, self.from
 
-      rpush *([0] * (idx - to)) if idx > to
-      lpush *([0] * (from - idx - 1)) if idx < from
+      # extend just before the target value
+      extend!(idx + 1, idx, 0)
 
       if idx < from
         lpush value
@@ -53,6 +53,7 @@ module RedisStats
       self
     end
 
+    # doesn't resize the data
     def from=(value)
       redis.set from_key, value
       set_size
@@ -79,13 +80,24 @@ module RedisStats
       get_or_set_default(slice_size_key, @config_slice_size).to_i
     end
 
-    def restructure!(new_slize_size)
-      redis.multi do
-        values = to_a
-        destroy
-        redis.set slice_size_key, new_slize_size
-        values.each { |v| self << v }
-      end
+    # todo implement
+    def resize!(new_from, new_to, pad_with = 0)
+      extend!(new_from, new_to, pad_with)
+      # crop!(new_from, new_to)
+      #   if new_from > from
+      #   if new_to < to
+    end
+
+    def extend!(new_from, new_to, pad_with = 0)
+      rpush *([pad_with] * (new_to - to)) if new_to > to
+      lpush *([pad_with] * (from - new_from)) if new_from < from
+    end
+
+    def restructure!(new_slice_size)
+      values = to_a
+      destroy
+      redis.set slice_size_key, new_slice_size
+      values.each { |v| self << v }
     end
 
     def rpush(*vals)
