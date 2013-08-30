@@ -1,3 +1,4 @@
+require 'redis_stats/enumerable_series'
 module RedisStats
   class DaySeries < EnumerableSeries
     protected

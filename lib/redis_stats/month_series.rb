@@ -1,3 +1,4 @@
+require 'redis_stats/enumerable_series'
 module RedisStats
   class MonthSeries < EnumerableSeries
     protected
@@ -10,7 +11,7 @@ module RedisStats
     end
 
     def x_from_s(val)
-      Date.parse val + '-15' if val
+      Date.parse(val + '-15') if val
     end
 
     def x_to_s(val)

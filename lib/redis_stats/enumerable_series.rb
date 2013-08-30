@@ -1,13 +1,13 @@
+require 'redis_stats/redis_series'
 module RedisStats
   # abstract class, requires: 
   # * x_from_i
   # * x_to_i
-  # * dimension_from_s
-  # * dimension_to_s
+  # * x_from_s
+  # * x_to_s
   class EnumerableSeries
-    include RedisList
-    include Enumerable
-    delegate :key, :size, :each, to: @list
+    include RedisSeries
+    delegate :key, :size, :each, to: :@list
 
     def initialize(key)
       @list = IntSeries.new(key)
