@@ -10,6 +10,5 @@ include RedisStats
 require 'mock_redis'
 
 RSpec.configure do |config|
-
 end
 
