@@ -1,13 +1,36 @@
 require 'active_support/number_helper'
 require 'benchmark_helper'
+
+# requires gnuplot with cairo
+#   brew install gnuplot --cairo
 class RedisListBenchmark
   include RedisStats
   include ActiveSupport::NumberHelper
 
   def bm_all
-    bm_plot 1_000_000, 1_000
+    bm_plot_memory 1_000_000, 10_000
     bm_memory 2_000_000
+    bm_speed 1_000_000
   end
+
+
+  def bm_plot_memory(max = 100_000, step = 1_000)
+    x = []
+    y1 = []
+    y2 = []
+    (step..max).step(step).each do |i|
+      puts "bm_plot_memory: #{number_to_human i} / #{number_to_human max}"
+      x << i
+      y1 << single_list_memory(i) / (1024 * 1024).to_f
+      y2 << sliced_list_memory(i) / (1024 * 1024).to_f
+    end
+    BenchmarkHelper.plot(x, y1, y2) do |plot|
+      plot.output 'bm/plot.png'
+      plot.title "Regular vs Sliced (#{slice_size} per slice)"
+      plot.terminal 'pngcairo'
+    end
+  end
+
 
   def bm_speed(keys = 1_000_000)
     redis.flushall
@@ -25,24 +48,8 @@ class RedisListBenchmark
         access_ranges.each { |r| redis.lrange 'list', r[0], r[1] }
       }
       x.report('sliced list') {
-        access_ranges.each { |r| redis.lrange 'list', r[0], r[1] }
+        access_ranges.each { |r| sliced.range r[0], r[1] }
       }
-    end
-  end
-
-  def bm_plot(max = 100_000, step = 1_000)
-    x = []
-    y1 = []
-    y2 = []
-    (step..max).step(step).each do |i|
-      x << i
-      y1 << single_list_memory(i) / (1024 * 1024).to_f
-      y2 << sliced_list_memory(i) / (1024 * 1024).to_f
-    end
-    BenchmarkHelper.plot(x, y1, y2) do |plot|
-      plot.output 'bm/plot.png'
-      plot.title "Regular vs Sliced (#{slice_size} per slice)"
-      plot.terminal 'pngcairo'
     end
   end
 
