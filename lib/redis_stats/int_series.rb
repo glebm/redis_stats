@@ -7,7 +7,6 @@ require 'redis_stats/redis_series'
 module RedisStats
   class IntSeries
     include RedisSeries
-    include Enumerable
 
     def initialize(key, opts = {})
       @key               = key
@@ -49,7 +48,7 @@ module RedisStats
     end
 
     def <<(value)
-      self[size] = value
+      rpush value
       self
     end
 
@@ -112,6 +111,7 @@ module RedisStats
         i += push.length
       end
       self.to += vals.length
+      self
     end
 
     def lpush(*vals)
@@ -127,6 +127,7 @@ module RedisStats
         i -= push.length
       end
       self.from -= vals.length
+      self
     end
 
     private

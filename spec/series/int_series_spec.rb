@@ -1,9 +1,6 @@
 require 'spec_helper'
 
-describe 'IntSeries' do
-  before do
-    Redis.current = MockRedis.new
-  end
+describe 'IntSeries', redis: :mock do
 
   it 'works like a basic list (1 slice)' do
     series = IntSeries.new('ints', list_slice_size: 4)

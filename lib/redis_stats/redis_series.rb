@@ -1,6 +1,6 @@
 module RedisStats
   module RedisSeries
-    extend Enumerable
+    include Enumerable
 
     attr_reader :key
 

@@ -7,7 +7,7 @@ module RedisStats
   # * x_to_s
   class EnumerableSeries
     include RedisSeries
-    delegate :key, :size, :each, to: :@list
+    delegate :key, :size, :each, :<<, :rpush, :lpush, to: :@list
 
     def initialize(key)
       @list = IntSeries.new(key)
@@ -31,17 +31,12 @@ module RedisStats
     end
 
     def to
-      x_from_i(size)
+      x_from_i(@list.to)
     end
 
     private
-
     def from_key
-      "#{key}:d-from"
-    end
-
-    def to_key
-      "#{key}:d-to"
+      "#{key}:e-from"
     end
   end
 end
