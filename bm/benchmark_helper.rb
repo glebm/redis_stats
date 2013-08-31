@@ -1,4 +1,5 @@
 require 'gnuplot'
+require 'benchmark'
 
 module BenchmarkHelper
   extend self

@@ -4,6 +4,32 @@ class RedisListBenchmark
   include RedisStats
   include ActiveSupport::NumberHelper
 
+  def bm_all
+    bm_plot 1_000_000, 1_000
+    bm_memory 2_000_000
+  end
+
+  def bm_speed(keys = 1_000_000)
+    redis.flushall
+    vals = (1..keys).to_a.shuffle
+    access_ranges = (1..1000).map { |i|
+      from = rand(1_000_000)
+      to = [from + rand(10000), keys - 1].max
+      [from, to]
+    }
+    redis.rpush 'list', vals
+    sliced = IntSeries.new('sliced')
+    sliced.rpush vals
+    Benchmark.bm do |x|
+      x.report('list') {
+        access_ranges.each { |r| redis.lrange 'list', r[0], r[1] }
+      }
+      x.report('sliced list') {
+        access_ranges.each { |r| redis.lrange 'list', r[0], r[1] }
+      }
+    end
+  end
+
   def bm_plot(max = 100_000, step = 1_000)
     x = []
     y1 = []

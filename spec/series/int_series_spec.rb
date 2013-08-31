@@ -18,7 +18,6 @@ describe 'IntSeries', redis: :mock do
     series.to_a.should == %w(a b c d e)
   end
 
-
   it 'extends from and to' do
     series = IntSeries.new('ints', list_slice_size: 2)
     series[-5] = 1
@@ -64,5 +63,14 @@ describe 'IntSeries', redis: :mock do
     series.lpush [-5, -4, -3, -2, -1]
     series.from.should == -5
     series.to_a.should == %w(-1 -2 -3 -4 -5 1 2 3 4 5 6)
+  end
+
+  it 'range' do
+    series = IntSeries.new('ints', list_slice_size: 2)
+    series.rpush [1, 2, 3, 4, 5]
+    series.range(0, -1).to_a.should == %w(1 2 3 4 5)
+    series.range(0, 1).to_a.should == %w(1 2)
+    series.range(0, 2).to_a.should == %w(1 2 3)
+    series.range(-4, -3).to_a.should == %w(2 3)
   end
 end

@@ -22,6 +22,21 @@ module RedisStats
       end
     end
 
+    # range [a..b], same as redis lrange command
+    def range(a, b)
+      b = to + b if b < 0
+      a = to + a if a < 0
+      (a / slice_size .. b / slice_size).map do |i|
+        if i == a / slice_size
+          redis.lrange(slice_key(i), a % slice_size, b / slice_size > i ? -1 : b % slice_size)
+        elsif i == b / slice_size
+          redis.lrange(slice_key(i), a / slice_size < i ? 0 : a % slice_size, b % slice_size)
+        else
+          redis.lrange slice_key(i), 0, -1
+        end
+      end.inject(:+)
+    end
+
     def []=(idx, value)
       self.from ||= idx
       self.to   ||= idx
@@ -132,8 +147,8 @@ module RedisStats
       self
     end
 
-    def slice_keys
-      (from / slice_size .. to / slice_size).map { |i| slice_key(i) }
+    def slice_keys(f = from, t = to)
+      (f / slice_size .. t / slice_size).map { |i| slice_key(i) }
     end
 
     private
