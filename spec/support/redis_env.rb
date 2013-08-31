@@ -8,8 +8,11 @@ module RedisEnv
   end
 
   def clear_redis!
-    keys = Redis.current.keys('*')
-    Redis.current.del *keys if keys.present?
+    Redis.current.flushall
+  end
+
+  def redis
+    Redis.current
   end
 
   def self.included(base)

@@ -24,6 +24,11 @@ module RedisStats
       to
     end
 
+    def memory_size
+      keys = redis.keys("#{key}:*")
+
+    end
+
     protected
 
     # get (or set default)

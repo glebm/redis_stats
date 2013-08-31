@@ -17,10 +17,8 @@ module RedisStats
     end
 
     def each
-      (from / slice_size .. to / slice_size).each do |i|
-        redis.lrange(slice_key(i), 0, -1).each do |value|
-          yield value
-        end
+      slice_keys.each do |slice|
+        redis.lrange(slice, 0, -1).each { |value| yield value }
       end
     end
 
@@ -79,7 +77,7 @@ module RedisStats
       get_or_set_default(slice_size_key, @config_slice_size).to_i
     end
 
-    # todo implement
+    # todo implement shrinking (crop)
     def resize!(new_from, new_to, pad_with = 0)
       extend!(new_from, new_to, pad_with)
       # crop!(new_from, new_to)
@@ -88,8 +86,8 @@ module RedisStats
     end
 
     def extend!(new_from, new_to, pad_with = 0)
-      rpush *([pad_with] * (new_to - to)) if new_to > to
-      lpush *([pad_with] * (from - new_from)) if new_from < from
+      rpush([pad_with] * (new_to - to)) if new_to > to
+      lpush([pad_with] * (from - new_from)) if new_from < from
     end
 
     def restructure!(new_slice_size)
@@ -99,10 +97,12 @@ module RedisStats
       values.each { |v| self << v }
     end
 
-    def rpush(*vals)
+    def rpush(vals)
+      vals = Array(vals)
       self.from = self.to = 0 unless self.from
       i = to = self.to
-      while i <= to + vals.length
+      max_i = to + vals.length
+      while i <= max_i
         slice, _ = key_pos(i)
         space    = slice_size - redis.llen(slice)
         push = vals[i - to...i - to + space] || []
@@ -114,11 +114,13 @@ module RedisStats
       self
     end
 
-    def lpush(*vals)
+    def lpush(vals)
+      vals = Array(vals)
       self.from = self.to = 0 unless self.from
       from = self.from
       i = from - 1
-      while i >= from - vals.length
+      min_i = from - vals.length
+      while i >= min_i
         slice, _ = key_pos(i)
         space    = slice_size - redis.llen(slice)
         push = vals[(from - i - 1)...(from - i - 1) + space] || []
@@ -128,6 +130,10 @@ module RedisStats
       end
       self.from -= vals.length
       self
+    end
+
+    def slice_keys
+      (from / slice_size .. to / slice_size).map { |i| slice_key(i) }
     end
 
     private
@@ -171,10 +177,6 @@ module RedisStats
 
     def pos(idx)
       [idx / slice_size, idx % slice_size]
-    end
-
-    def redis
-      Redis.current
     end
   end
 end

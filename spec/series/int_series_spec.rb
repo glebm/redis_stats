@@ -58,10 +58,10 @@ describe 'IntSeries', redis: :mock do
 
   it 'lpush rpush' do
     series = IntSeries.new('ints', list_slice_size: 5)
-    series.rpush 1, 2, 3, 4, 5, 6
+    series.rpush [1, 2, 3, 4, 5, 6]
     series.from.should == 0
     series.to.should == 6
-    series.lpush -5, -4, -3, -2, -1
+    series.lpush [-5, -4, -3, -2, -1]
     series.from.should == -5
     series.to_a.should == %w(-1 -2 -3 -4 -5 1 2 3 4 5 6)
   end

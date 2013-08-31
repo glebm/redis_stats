@@ -1,5 +1,6 @@
 *.gem
 *.rbc
+bm/*.png
 .ruby-version
 .ruby-gemset
 .bundle
