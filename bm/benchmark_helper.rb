@@ -8,9 +8,9 @@ module BenchmarkHelper
       Gnuplot::Plot.new(gp) do |plot|
         block.call(plot)
         ys.each do |y|
-          plot.data << Gnuplot::DataSet.new([x, y]) do |ds|
+          plot.data << Gnuplot::DataSet.new([x, y[:data]]) do |ds|
             ds.with = "linespoints"
-            ds.notitle
+            ds.title = y[:title] || y[:label]
           end
         end
       end

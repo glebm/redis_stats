@@ -26,15 +26,20 @@ module RedisStats
     def range(a, b)
       b = to + b if b < 0
       a = to + a if a < 0
-      (a / slice_size .. b / slice_size).map do |i|
-        if i == a / slice_size
-          redis.lrange(slice_key(i), a % slice_size, b / slice_size > i ? -1 : b % slice_size)
-        elsif i == b / slice_size
-          redis.lrange(slice_key(i), a / slice_size < i ? 0 : a % slice_size, b % slice_size)
-        else
-          redis.lrange slice_key(i), 0, -1
-        end
-      end.inject(:+)
+      r    = []
+      i    = a / slice_size
+      last = b / slice_size
+      while i <= last
+        r += if i == a / slice_size
+               redis.lrange(slice_key(i), a % slice_size, b / slice_size > i ? -1 : b % slice_size)
+             elsif i == b / slice_size
+               redis.lrange(slice_key(i), a / slice_size < i ? 0 : a % slice_size, b % slice_size)
+             else
+               redis.lrange slice_key(i), 0, -1
+             end
+        i += 1
+      end
+      r
     end
 
     def []=(idx, value)
@@ -115,12 +120,12 @@ module RedisStats
     def rpush(vals)
       vals = Array(vals)
       self.from = self.to = 0 unless self.from
-      i = to = self.to
+      i     = to = self.to
       max_i = to + vals.length
       while i <= max_i
         slice, _ = key_pos(i)
         space    = slice_size - redis.llen(slice)
-        push = vals[i - to...i - to + space] || []
+        push     = vals[i - to...i - to + space] || []
         break if push.empty?
         redis.rpush slice, push
         i += push.length
@@ -132,13 +137,13 @@ module RedisStats
     def lpush(vals)
       vals = Array(vals)
       self.from = self.to = 0 unless self.from
-      from = self.from
-      i = from - 1
+      from  = self.from
+      i     = from - 1
       min_i = from - vals.length
       while i >= min_i
         slice, _ = key_pos(i)
         space    = slice_size - redis.llen(slice)
-        push = vals[(from - i - 1)...(from - i - 1) + space] || []
+        push     = vals[(from - i - 1)...(from - i - 1) + space] || []
         break if push.empty?
         redis.lpush slice, push
         i -= push.length
